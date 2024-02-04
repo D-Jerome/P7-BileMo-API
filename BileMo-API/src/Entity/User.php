@@ -1,72 +1,75 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Entity;
 
-use App\Entity\Customer;
+use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
+use Symfony\Component\Security\Core\User\UserInterface;
 
-class User
+#[ORM\Entity]
+
+class User implements UserInterface, PasswordAuthenticatedUserInterface
 {
     /**
      * [Description for $id]
-     *
-     * @var int|null
      */
+    #[ORM\Id]
+    #[ORM\Column(type:'integer')]
+    #[ORM\GeneratedValue()]
     private ?int $id;
 
     /**
      * [Description for $email]
-     *
-     * @var string
      */
+    #[ORM\Column()]
     private string $email;
 
     /**
      * [Description for $password]
-     *
-     * @var string
      */
+    #[ORM\Column()]
     private string $password;
 
     /**
      * [Description for $createdAt]
-     *
-     * @var \DateTimeInterface
      */
+    #[ORM\Column(type:'datetime_immutable')]
     private \DateTimeInterface $createdAt;
 
     /**
-     * [Description for $customer]
+     * [Description for $roles]
      *
-     * @var Customer
+     * @var array<string>
      */
+    #[ORM\Column()]
+    private array $roles;
+
+    /**
+     * [Description for $customer]
+     */
+    #[ORM\ManyToOne(targetEntity: Customer::class, cascade: ["persist"])]
     private Customer $customer;
 
     /**
      * [Description for __construct]
-     *
-     *
      */
     public function __construct()
     {
         $this->createdAt = new \DateTimeImmutable();
     }
 
-
     /**
      * Get the value of id
-     *
-     * @return int
      */
     public function getId(): int
     {
         return $this->id;
     }
 
-
     /**
      * Get the value of email
-     *
-     * @return string
      */
     public function getEmail(): string
     {
@@ -75,21 +78,16 @@ class User
 
     /**
      * Set the value of email
-     *
-     * @param string $email
-     *
-     * @return self
      */
     public function setEmail(string $email): self
     {
         $this->email = $email;
+
         return $this;
     }
 
     /**
      * Get the value of password
-     *
-     * @return string
      */
     public function getPassword(): string
     {
@@ -98,21 +96,16 @@ class User
 
     /**
      * Set the value of password
-     *
-     * @param string $password
-     *
-     * @return self
      */
     public function setPassword(string $password): self
     {
         $this->password = $password;
+
         return $this;
     }
 
     /**
      * Get the value of createdAt
-     *
-     * @return \DateTime
      */
     public function getCreatedAt(): \DateTime
     {
@@ -121,21 +114,16 @@ class User
 
     /**
      * Set the value of createdAt
-     *
-     * @param \DateTime $createdAt
-     *
-     * @return self
      */
     public function setCreatedAt(\DateTime $createdAt): self
     {
         $this->createdAt = $createdAt;
+
         return $this;
     }
 
     /**
      * Get the value of customer
-     *
-     * @return Customer
      */
     public function getCustomer(): Customer
     {
@@ -144,14 +132,58 @@ class User
 
     /**
      * Set the value of customer
-     *
-     * @param Customer $customer
-     *
-     * @return self
      */
     public function setCustomer(Customer $customer): self
     {
         $this->customer = $customer;
+
         return $this;
+    }
+
+    /**
+     * Returns the roles granted to the user.
+     *
+     *     public function getRoles()
+     *     {
+     *         return ['ROLE_USER'];
+     *     }
+     *
+     * Alternatively, the roles might be stored in a ``roles`` property,
+     * and populated in any number of different ways when the user object
+     * is created.
+     *
+     * @return string[]
+     */
+    public function getRoles(): array
+    {
+        return $this->roles;
+    }
+
+    /**
+     * @return string[]
+     */
+    public function setRoles(array $roles): self
+    {
+        $this->roles = $roles;
+
+        return $this;
+    }
+
+    /**
+     * Removes sensitive data from the user.
+     *
+     * This is important if, at any given point, sensitive information like
+     * the plain-text password is stored on this object.
+     */
+    public function eraseCredentials(): void
+    {
+    }
+
+    /**
+     * Returns the identifier for this user (e.g. username or email address).
+     */
+    public function getUserIdentifier(): string
+    {
+        return $this->email;
     }
 }
