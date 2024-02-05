@@ -6,6 +6,7 @@ namespace App\Entity;
 
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\String\Slugger\SluggerInterface;
+use Symfony\Component\Serializer\Annotation\Groups;
 
 #[ORM\Entity()]
 class Customer
@@ -16,12 +17,13 @@ class Customer
     #[ORM\Id]
     #[ORM\Column(type:'integer')]
     #[ORM\GeneratedValue()]
-    private ?int $id;
+    private ?int $id = null;
 
     /**
      * [Description for $name]
      */
     #[ORM\Column()]
+    #[Groups(["get"])]
     private string $name;
 
     /**

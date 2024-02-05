@@ -7,6 +7,7 @@ namespace App\Entity;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 use Symfony\Component\Security\Core\User\UserInterface;
+use Symfony\Component\Serializer\Annotation\Groups;
 
 #[ORM\Entity]
 
@@ -18,11 +19,12 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Id]
     #[ORM\Column(type:'integer')]
     #[ORM\GeneratedValue()]
-    private ?int $id;
+    private ?int $id = null;
 
     /**
      * [Description for $email]
      */
+    #[Groups(["get"])]
     #[ORM\Column()]
     private string $email;
 
@@ -36,6 +38,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
      * [Description for $createdAt]
      */
     #[ORM\Column(type:'datetime_immutable')]
+    #[Groups(["get"])]
     private \DateTimeInterface $createdAt;
 
     /**
@@ -50,6 +53,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
      * [Description for $customer]
      */
     #[ORM\ManyToOne(targetEntity: Customer::class, cascade: ['persist'])]
+    #[Groups(["get"])]
     private Customer $customer;
 
     /**
@@ -107,7 +111,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     /**
      * Get the value of createdAt
      */
-    public function getCreatedAt(): \DateTime
+    public function getCreatedAt(): \DateTimeImmutable
     {
         return $this->createdAt;
     }
@@ -115,7 +119,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     /**
      * Set the value of createdAt
      */
-    public function setCreatedAt(\DateTime $createdAt): self
+    public function setCreatedAt(\DateTimeImmutable $createdAt): self
     {
         $this->createdAt = $createdAt;
 
