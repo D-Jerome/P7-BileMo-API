@@ -52,9 +52,10 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     /**
      * [Description for $customer]
      */
-    #[ORM\ManyToOne(targetEntity: Customer::class, cascade: ['persist'])]
+    #[ORM\ManyToOne(inversedBy: 'users')]
+    #[ORM\JoinColumn(nullable: false)]
     #[Groups(["get"])]
-    private Customer $customer;
+    private ?Customer $customer = null;
 
     /**
      * [Description for __construct]
@@ -129,15 +130,12 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     /**
      * Get the value of customer
      */
-    public function getCustomer(): Customer
+    public function getCustomer(): ?Customer
     {
         return $this->customer;
     }
 
-    /**
-     * Set the value of customer
-     */
-    public function setCustomer(Customer $customer): self
+    public function setCustomer(?Customer $customer): static
     {
         $this->customer = $customer;
 
