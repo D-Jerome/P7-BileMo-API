@@ -6,6 +6,7 @@ namespace App\Entity;
 
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Serializer\Annotation\Groups;
 
 #[ORM\Entity()]
 class Product
@@ -16,18 +17,21 @@ class Product
     #[ORM\Id]
     #[ORM\Column(type:'integer')]
     #[ORM\GeneratedValue]
-    private ?int $id;
+    #[Groups(["get"])]
+    private ?int $id = null;
 
     /**
      * [Description for $brand]
      */
     #[ORM\Column]
+    #[Groups(["get"])]
     private string $brand;
 
     /**
      * [Description for $name]
      */
     #[ORM\Column]
+    #[Groups(["get"])]
     private string $name;
 
     /**
