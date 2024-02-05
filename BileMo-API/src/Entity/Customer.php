@@ -7,6 +7,8 @@ namespace App\Entity;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\String\Slugger\SluggerInterface;
 use Symfony\Component\Serializer\Annotation\Groups;
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 
 #[ORM\Entity()]
 class Customer
@@ -17,6 +19,7 @@ class Customer
     #[ORM\Id]
     #[ORM\Column(type:'integer')]
     #[ORM\GeneratedValue()]
+    #[Groups(["get"])]
     private ?int $id = null;
 
     /**
@@ -31,6 +34,7 @@ class Customer
      */
     #[ORM\Column()]
     private string $slug;
+
 
     /**
      * Get the value of id
@@ -77,6 +81,8 @@ class Customer
 
         return $this;
     }
+
+
 
     public function computeSlug(SluggerInterface $slugger): void
     {
