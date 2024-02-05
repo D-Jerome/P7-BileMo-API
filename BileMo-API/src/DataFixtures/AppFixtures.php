@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace App\DataFixtures;
 
-use Faker\Factory;
-use App\Entity\User;
-use App\Entity\Product;
 use App\Entity\Customer;
-use Doctrine\Persistence\ObjectManager;
+use App\Entity\Product;
+use App\Entity\User;
 use Doctrine\Bundle\FixturesBundle\Fixture;
+use Doctrine\Persistence\ObjectManager;
+use Faker\Factory;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 
 /**
@@ -30,9 +30,9 @@ class AppFixtures extends Fixture
     public function load(ObjectManager $manager): void
     {
         $faker = Factory::create('fr_FR');
-        
-        for ($j =0; $j <= 5; $j++){
-            $customer = new Customer;
+
+        for ($j = 0; $j <= 5; ++$j) {
+            $customer = new Customer();
             $customer->setName($faker->company());
             $customerList[] = $customer;
             $manager->persist($customer);
@@ -50,12 +50,11 @@ class AppFixtures extends Fixture
         for($i = 0; $i <= 20; ++$i) {
             $product = new Product();
             $product->setBrand($faker->company());
-            $product->setName($faker->word(6));
+            $product->setName($faker->text(20));
             $product->setReference($faker->uuid());
             $product->setDescription($faker->realText($faker->numberBetween(200, 300)));
             $manager->persist($product);
         }
         $manager->flush();
     }
-
 }

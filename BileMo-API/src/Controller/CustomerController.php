@@ -1,17 +1,21 @@
 <?php
 
-
-use Symfony\Component\Routing\Annotation\Route;
+declare(strict_types=1);
 
 namespace App\Controller;
 
+use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Component\Routing\Annotation\Route;
+
 /**
  * class CustomerController
- *
  */
-#[Route('/api/customers', name: 'app_customers')]
+#[Route('/api/customers')]
 class CustomerController
 {
-    public function 
+    #[Route(name: 'app_customers', methods:["GET"])]
+    public function collection(): JsonResponse
+    {
+        return new JsonResponse([]);
+    }
 }
-

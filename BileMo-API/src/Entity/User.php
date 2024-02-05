@@ -49,7 +49,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     /**
      * [Description for $customer]
      */
-    #[ORM\ManyToOne(targetEntity: Customer::class, cascade: ["persist"])]
+    #[ORM\ManyToOne(targetEntity: Customer::class, cascade: ['persist'])]
     private Customer $customer;
 
     /**
