@@ -15,8 +15,8 @@ use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 
 #[ORM\Entity(repositoryClass: UserRepository::class)]
 #[UniqueEntity(
-    fields: ['slug'],
-    message: 'cet utilisateur existe déjà',
+    fields: ['username'],
+    message: 'cet utilisateur existe déjà, merci de changer de username',
 )]
 class User implements UserInterface, PasswordAuthenticatedUserInterface
 {
@@ -33,9 +33,9 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
      *
      * @var string
      */
-    #[ORM\Column()]
-    #[Assert\NotNull()]
+    #[ORM\Column(type: 'string', length: 255, unique: true)]
     #[Assert\NotBlank()]
+    #[Assert\Length(min: 5, minMessage: 'Username {{ value }} est trop court, minimum {{ limit }} caractères requis')]
     private string $username;
     
     
@@ -43,30 +43,30 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
      * [Description for $email]
      */
     #[Groups(["get"])]
-    #[ORM\Column()]
+    #[ORM\Column(type: 'string', length: 255)]
     #[Assert\Email()]
-    private string $email;
+    private ?string $email = null;
 
     /**
      * [Description for $password]
      */
-    #[ORM\Column()]
+    #[ORM\Column(type: 'string', length: 255)]
     #[Assert\PasswordStrength()]
-    private string $password;
+    private ?string $password = null;
 
     /**
      * [Description for $createdAt]
      */
     #[ORM\Column(type:'datetime_immutable')]
     #[Groups(["get"])]
-    private \DateTimeInterface $createdAt;
+    private ?\DateTimeInterface $createdAt = null;
 
     /**
      * [Description for $roles]
      *
      * @var array<string>
      */
-    #[ORM\Column()]
+    #[ORM\Column(type: 'string', length: 255)]
     private array $roles = ['ROLE_USER'];
 
     /**
@@ -76,16 +76,6 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\JoinColumn(nullable: false)]
     #[Groups(["get"])]
     private ?Customer $customer = null;
-
-   
-    /**
-     * Slug = Slug(email)-IdCustomer
-     * Unicity fields
-     *
-     * @var string|null
-     */
-    #[ORM\Column()]
-    private ?string $slug = null;
 
     /**
      * [Description for __construct]
@@ -98,7 +88,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     /**
      * Get the value of id
      */
-    public function getId(): int
+    public function getId(): ?int
     {
         return $this->id;
     }
@@ -106,7 +96,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     /**
      * Get the value of email
      */
-    public function getEmail(): string
+    public function getEmail(): ?string
     {
         return $this->email;
     }
@@ -114,7 +104,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     /**
      * Set the value of email
      */
-    public function setEmail(string $email): self
+    public function setEmail(?string $email): self
     {
         $this->email = $email;
 
@@ -124,7 +114,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     /**
      * Get the value of password
      */
-    public function getPassword(): string
+    public function getPassword(): ?string
     {
         return $this->password;
     }
@@ -132,7 +122,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     /**
      * Set the value of password
      */
-    public function setPassword(string $password): self
+    public function setPassword(?string $password): self
     {
         $this->password = $password;
 
@@ -142,7 +132,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     /**
      * Get the value of createdAt
      */
-    public function getCreatedAt(): \DateTimeImmutable
+    public function getCreatedAt(): ?\DateTimeImmutable
     {
         return $this->createdAt;
     }
@@ -150,7 +140,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     /**
      * Set the value of createdAt
      */
-    public function setCreatedAt(\DateTimeImmutable $createdAt): self
+    public function setCreatedAt(?\DateTimeImmutable $createdAt): self
     {
         $this->createdAt = $createdAt;
 
@@ -216,33 +206,30 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
      */
     public function getUserIdentifier(): string
     {
-        return $this->email;
+        return $this->username;
+    }
+
+   
+
+
+    /**
+     * Get the value of username
+     *
+     * @return string
+     */
+    public function getUsername(): string {
+        return $this->username;
     }
 
     /**
-     * Get the Slug
+     * Set the value of username
+     *
+     * @param string $username
+     *
+     * @return self
      */
-    public function getSlug(): ?string
-    {
-        return $this->slug;
-    }
-
-    /**
-     * Get the value of email
-     */
-    public function setSlug(?string $slug): self
-    {
-        $this->slug = $slug;
-        
+    public function setUsername(string $username): self {
+        $this->username = $username;
         return $this;
     }
-
-    public function computeSlug(SluggerInterface $slugger): void
-    {
-        $this->slug = (string) $slugger->slug((string) $this->getEmail())->lower();
-        $this->slug .= "-";
-        $this->slug .= $this->getCustomer()->getId();
-
-    }
-
 }

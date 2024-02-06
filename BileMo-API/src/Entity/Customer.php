@@ -32,18 +32,18 @@ class Customer
     /**
      * [Description for $name]
      */
-    #[ORM\Column()]
+    #[ORM\Column(type: 'string', length: 255)]
     #[Groups(["get"])]
     #[Assert\NotNull()]
     #[Assert\NotBlank()]
     #[Assert\Length(max: 255)]
-    private string $name;
+    private ?string $name = null;
 
     /**
      * [Description for $slug]
      */
-    #[ORM\Column()]
-    private string $slug;
+    #[ORM\Column(type: 'string', length: 255)]
+    private ?string $slug = null;
 
     /**
      * [Description for $users]
@@ -69,7 +69,7 @@ class Customer
     /**
      * Get the value of name
      */
-    public function getName(): string
+    public function getName(): ?string
     {
         return $this->name;
     }
@@ -77,7 +77,7 @@ class Customer
     /**
      * Set the value of name
      */
-    public function setName(string $name): self
+    public function setName(?string $name): self
     {
         $this->name = $name;
 
@@ -87,7 +87,7 @@ class Customer
     /**
      * Get the value of slug
      */
-    public function getSlug(): string
+    public function getSlug(): ?string
     {
         return $this->slug;
     }
@@ -95,7 +95,7 @@ class Customer
     /**
      * Set the value of slug
      */
-    public function setSlug(string $slug): self
+    public function setSlug(?string $slug): self
     {
         $this->slug = $slug;
 
@@ -103,9 +103,9 @@ class Customer
     }
 
     /**
-     * @return Collection<int, User>
+     * @return Collection<int,User>|null
      */
-    public function getUsers(): Collection
+    public function getUsers(): ?Collection
     {
         return $this->users;
     }

@@ -158,6 +158,8 @@ class UserController extends AbstractController
      * @param Request $request
      * @param SerializerInterface $serializer
      * @param EntityManagerInterface $em
+     * @param ValidatorInterface $validator
+       @param UserPasswordHasherInterface $userPasswordHasher
      *
      * @return JsonResponse
      *
@@ -168,7 +170,8 @@ class UserController extends AbstractController
         Request $request,
         SerializerInterface $serializer,
         EntityManagerInterface $em,
-        ValidatorInterface $validator
+        ValidatorInterface $validator,
+        UserPasswordHasherInterface $userPasswordHasher
     ): JsonResponse {
 
         /**
@@ -182,19 +185,30 @@ class UserController extends AbstractController
                 JsonResponse::HTTP_UNAUTHORIZED
             );
         }
-
+        $userDataToChange = $serializer->deserialize(
+                                                $request->getContent(),
+                                                User::class,
+                                                'json'
+                                            );  
         $user = $serializer->deserialize(
             $request->getContent(),
             User::class,
             'json',
             [AbstractNormalizer::OBJECT_TO_POPULATE => $user ]
         );
-
+       
         $errors = $validator->validate($user);
         if ($errors->count() > 0){
             return new JsonResponse($serializer->serialize($errors,"json"), JsonResponse::HTTP_BAD_REQUEST);
         }
-
+        if ($userDataToChange->getPassword()) {
+            $user->setPassword(
+                $userPasswordHasher->hashPassword(
+                    $user,
+                    $user->getPassword()
+                )
+            );
+        }
         $em->flush();
 
         return new JsonResponse(
