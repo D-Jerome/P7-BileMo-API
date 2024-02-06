@@ -13,6 +13,7 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\Serializer\SerializerInterface;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Symfony\Component\Serializer\Normalizer\AbstractNormalizer;
+use Symfony\Component\Validator\Validator\ValidatorInterface;
 
 /**
  * class ProductController
@@ -68,7 +69,7 @@ class ProductController
      * @param SerializerInterface $serializer
      * @param EntityManagerInterface $em
      * @param UrlGeneratorInterface $urlGenerator
-     *
+     * @param ValidatorInterface  $validator
      * @return JsonResponse
      *
      */
@@ -77,10 +78,17 @@ class ProductController
         Request $request,
         SerializerInterface $serializer,
         EntityManagerInterface $em,
-        UrlGeneratorInterface $urlGenerator
+        UrlGeneratorInterface $urlGenerator,
+        ValidatorInterface  $validator
     ): JsonResponse {
         /** @var Product $product */
         $product = $serializer->deserialize($request->getContent(), Product::class, 'json');
+        
+        $errors = $validator->validate($product);
+        if ($errors->count() > 0){
+            return new JsonResponse($serializer->serialize($errors,"json"), JsonResponse::HTTP_BAD_REQUEST);
+        }
+        
         $em->persist($product);
         $em->flush();
 
@@ -99,7 +107,7 @@ class ProductController
      * @param Request $request
      * @param SerializerInterface $serializer
      * @param EntityManagerInterface $em
-     *
+     * @param ValidatorInterface  $validator
      * @return JsonResponse
      *
      */
@@ -108,7 +116,8 @@ class ProductController
         Product $product,
         Request $request,
         SerializerInterface $serializer,
-        EntityManagerInterface $em
+        EntityManagerInterface $em,
+        ValidatorInterface  $validator
     ): JsonResponse {
 
         $product = $serializer->deserialize(
@@ -117,6 +126,12 @@ class ProductController
             'json',
             [AbstractNormalizer::OBJECT_TO_POPULATE => $product ]
         );
+        
+        $errors = $validator->validate($product);
+        if ($errors->count() > 0){
+            return new JsonResponse($serializer->serialize($errors,"json"), JsonResponse::HTTP_BAD_REQUEST);
+        }
+
         $em->flush();
 
         return new JsonResponse(

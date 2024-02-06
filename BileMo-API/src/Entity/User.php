@@ -5,11 +5,13 @@ declare(strict_types=1);
 namespace App\Entity;
 
 use Doctrine\ORM\Mapping as ORM;
-use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
-use Symfony\Component\Security\Core\User\UserInterface;
+use App\Repository\UserRepository;
 use Symfony\Component\Serializer\Annotation\Groups;
+use Symfony\Component\Validator\Constraints as Assert;
+use Symfony\Component\Security\Core\User\UserInterface;
+use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 
-#[ORM\Entity]
+#[ORM\Entity(repositoryClass: UserRepository::class)]
 
 class User implements UserInterface, PasswordAuthenticatedUserInterface
 {
@@ -26,12 +28,14 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
      */
     #[Groups(["get"])]
     #[ORM\Column()]
+    #[Assert\Email()]
     private string $email;
 
     /**
      * [Description for $password]
      */
     #[ORM\Column()]
+    #[Assert\PasswordStrength()]
     private string $password;
 
     /**

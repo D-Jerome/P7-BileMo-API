@@ -11,6 +11,7 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\Serializer\SerializerInterface;
+use Symfony\Component\Validator\Validator\ValidatorInterface;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Symfony\Component\Serializer\Normalizer\AbstractNormalizer;
 
@@ -68,7 +69,7 @@ class CustomerController
      * @param SerializerInterface $serializer
      * @param EntityManagerInterface $em
      * @param UrlGeneratorInterface $urlGenerator
-     *
+     * @param ValidatorInterface  $validator
      * @return JsonResponse
      *
      */
@@ -77,10 +78,17 @@ class CustomerController
         Request $request,
         SerializerInterface $serializer,
         EntityManagerInterface $em,
-        UrlGeneratorInterface $urlGenerator
+        UrlGeneratorInterface $urlGenerator,
+        ValidatorInterface  $validator
     ): JsonResponse {
         /** @var Customer $customer */
         $customer = $serializer->deserialize($request->getContent(), Customer::class, 'json');
+        
+        $errors = $validator->validate($customer);
+        if ($errors->count() > 0){
+            return new JsonResponse($serializer->serialize($errors,"json"), JsonResponse::HTTP_BAD_REQUEST);
+        }
+        
         $em->persist($customer);
         $em->flush();
 
@@ -99,7 +107,7 @@ class CustomerController
      * @param Request $request
      * @param SerializerInterface $serializer
      * @param EntityManagerInterface $em
-     *
+     * @param ValidatorInterface  $validator
      * @return JsonResponse
      *
      */
@@ -108,7 +116,8 @@ class CustomerController
         Customer $customer,
         Request $request,
         SerializerInterface $serializer,
-        EntityManagerInterface $em
+        EntityManagerInterface $em,
+        ValidatorInterface  $validator
     ): JsonResponse {
 
         $customer = $serializer->deserialize(
@@ -117,6 +126,12 @@ class CustomerController
             'json',
             [AbstractNormalizer::OBJECT_TO_POPULATE => $customer ]
         );
+
+        $errors = $validator->validate($customer);
+        if ($errors->count() > 0){
+            return new JsonResponse($serializer->serialize($errors,"json"), JsonResponse::HTTP_BAD_REQUEST);
+        }
+
         $em->flush();
 
         return new JsonResponse(
