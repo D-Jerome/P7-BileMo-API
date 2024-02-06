@@ -35,9 +35,15 @@ security:
 
     # Easy way to control access for large sections of your site
     # Note: Only the *first* access control that matches will be used
+    role_hierarchy:
+        ROLE_COMPANY_ADMIN:       ROLE_USER
+    
     access_control:
         - { path: ^/api/login, roles: PUBLIC_ACCESS }
-        - { path: ^/api,       roles: IS_AUTHENTICATED_FULLY }
+        - { path: ^/api/products, roles: IS_AUTHENTICATED_FULLY}
+        - { path: ^/api,       roles: ROLE_COMPANY_ADMIN }
+        
+        
         # - { path: ^/admin, roles: ROLE_ADMIN }
         # - { path: ^/profile, roles: ROLE_USER }
 

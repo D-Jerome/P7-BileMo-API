@@ -51,7 +51,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
      * @var array<string>
      */
     #[ORM\Column()]
-    private array $roles;
+    private array $roles = ['ROLE_USER'];
 
     /**
      * [Description for $customer]

@@ -33,6 +33,7 @@ class CustomerController
     #[Route(name: 'app_customers_collection_get', methods:["GET"])]
     public function collection(CustomerRepository $customerRepository, SerializerInterface $serializer): JsonResponse
     {
+        
         return new JsonResponse(
             $serializer->serialize($customerRepository->findAll(), "json", ['groups' => 'get']),
             JsonResponse::HTTP_OK,
