@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace App\EntityListener;
 
 use App\Entity\Customer;
-use Doctrine\Bundle\DoctrineBundle\Attribute\AsEntityListener;
 use Doctrine\ORM\Events;
 use Symfony\Component\String\Slugger\SluggerInterface;
+use Doctrine\Bundle\DoctrineBundle\Attribute\AsEntityListener;
 
 #[AsEntityListener(event: Events::prePersist, entity: Customer::class)]
 #[AsEntityListener(event: Events::preUpdate, entity: Customer::class)]

@@ -12,11 +12,13 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\HttpFoundation\JsonResponse;
+
+use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use Symfony\Component\Serializer\SerializerInterface;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Symfony\Component\Serializer\Normalizer\AbstractNormalizer;
-use Symfony\Component\VarDumper\Cloner\AbstractCloner;
+use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 /**
  * class UserController
@@ -103,7 +105,8 @@ class UserController extends AbstractController
         SerializerInterface $serializer,
         EntityManagerInterface $em,
         UrlGeneratorInterface $urlGenerator,
-        ValidatorInterface $validator
+        ValidatorInterface $validator,
+        UserPasswordHasherInterface $userPasswordHasher
     ): JsonResponse {
         /**
          * @var User $connectedUser
@@ -120,9 +123,23 @@ class UserController extends AbstractController
                 JsonResponse::HTTP_BAD_REQUEST
             );
         }
-
+        $user->setPassword(
+            $userPasswordHasher->hashPassword(
+                $user,
+                $user->getPassword()
+            )
+        );
         $user->setCustomer($connectedUser->getCustomer());
         $em->persist($user);
+
+        $errors = $validator->validate($user);
+        if ($errors->count() > 0){
+            return new JsonResponse(
+                $serializer->serialize($errors,"json"),
+                JsonResponse::HTTP_BAD_REQUEST
+            );
+        }
+
         $em->flush();
 
         return new JsonResponse(

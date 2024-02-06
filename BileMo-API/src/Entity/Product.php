@@ -12,7 +12,10 @@ use Symfony\Component\Validator\Constraints as Assert;
 use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 
 #[ORM\Entity(repositoryClass: ProductRepository::class)]
-#[UniqueEntity('reference')]
+#[UniqueEntity(
+    fields: ['reference'],
+    message: 'ce produit existe déjà',
+)]
 class Product
 {
     /**

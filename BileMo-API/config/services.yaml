@@ -13,6 +13,10 @@ services:
 
     # makes classes in src/ available to be used as services
     # this creates a service per class whose id is the fully-qualified class name
+    app.custom_authenticator:
+        class: App\Security\CustomAuthenticator
+        parent: lexik_jwt_authentication.security.jwt_authenticator
+    
     App\:
         resource: '../src/'
         exclude:

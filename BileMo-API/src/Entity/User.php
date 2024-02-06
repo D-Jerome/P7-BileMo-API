@@ -7,12 +7,17 @@ namespace App\Entity;
 use Doctrine\ORM\Mapping as ORM;
 use App\Repository\UserRepository;
 use Symfony\Component\Serializer\Annotation\Groups;
+use Symfony\Component\String\Slugger\SluggerInterface;
 use Symfony\Component\Validator\Constraints as Assert;
 use Symfony\Component\Security\Core\User\UserInterface;
+use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 
 #[ORM\Entity(repositoryClass: UserRepository::class)]
-
+#[UniqueEntity(
+    fields: ['slug'],
+    message: 'cet utilisateur existe déjà',
+)]
 class User implements UserInterface, PasswordAuthenticatedUserInterface
 {
     /**
@@ -23,6 +28,17 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\GeneratedValue()]
     private ?int $id = null;
 
+    /**
+     * [Description for $username]
+     *
+     * @var string
+     */
+    #[ORM\Column()]
+    #[Assert\NotNull()]
+    #[Assert\NotBlank()]
+    private string $username;
+    
+    
     /**
      * [Description for $email]
      */
@@ -60,6 +76,16 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\JoinColumn(nullable: false)]
     #[Groups(["get"])]
     private ?Customer $customer = null;
+
+   
+    /**
+     * Slug = Slug(email)-IdCustomer
+     * Unicity fields
+     *
+     * @var string|null
+     */
+    #[ORM\Column()]
+    private ?string $slug = null;
 
     /**
      * [Description for __construct]
@@ -192,4 +218,31 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     {
         return $this->email;
     }
+
+    /**
+     * Get the Slug
+     */
+    public function getSlug(): ?string
+    {
+        return $this->slug;
+    }
+
+    /**
+     * Get the value of email
+     */
+    public function setSlug(?string $slug): self
+    {
+        $this->slug = $slug;
+        
+        return $this;
+    }
+
+    public function computeSlug(SluggerInterface $slugger): void
+    {
+        $this->slug = (string) $slugger->slug((string) $this->getEmail())->lower();
+        $this->slug .= "-";
+        $this->slug .= $this->getCustomer()->getId();
+
+    }
+
 }

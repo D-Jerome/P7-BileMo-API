@@ -14,7 +14,10 @@ use Symfony\Component\Validator\Constraints as Assert;
 use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 
 #[ORM\Entity(repositoryClass: CustomerRepository::class)]
-#[UniqueEntity('slug')]
+#[UniqueEntity(
+    fields: ['slug'],
+    message: 'cette compagnie existe déjà',
+)]
 class Customer
 {
     /**
@@ -42,12 +45,22 @@ class Customer
     #[ORM\Column()]
     private string $slug;
 
+    /**
+     * [Description for $users]
+     *
+     * @var Collection<int,User>
+     */
+    #[ORM\OneToMany(mappedBy: 'customer', targetEntity: User::class)]
+    #[ORM\JoinColumn(nullable: false)]
+    private Collection $users;
+
 
     /**
      * Get the value of id
      *
      * @return ?int
      */
+    
     public function getId(): ?int
     {
         return $this->id;
@@ -89,7 +102,13 @@ class Customer
         return $this;
     }
 
-
+    /**
+     * @return Collection<int, User>
+     */
+    public function getUsers(): Collection
+    {
+        return $this->users;
+    }
 
     public function computeSlug(SluggerInterface $slugger): void
     {
