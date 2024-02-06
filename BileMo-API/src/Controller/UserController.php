@@ -13,6 +13,7 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\Serializer\SerializerInterface;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Symfony\Component\Serializer\Normalizer\AbstractNormalizer;
+use Symfony\Component\Validator\Validator\ValidatorInterface;
 
 /**
  * class UserController
@@ -77,10 +78,17 @@ class UserController
         Request $request,
         SerializerInterface $serializer,
         EntityManagerInterface $em,
-        UrlGeneratorInterface $urlGenerator
+        UrlGeneratorInterface $urlGenerator,
+        ValidatorInterface $validator
     ): JsonResponse {
         /** @var User $user */
         $user = $serializer->deserialize($request->getContent(), User::class, 'json');
+        
+        $errors = $validator->validate($user);
+        if ($errors->count() > 0){
+            return new JsonResponse($serializer->serialize($errors,"json"), JsonResponse::HTTP_BAD_REQUEST);
+        }
+
         $em->persist($user);
         $em->flush();
 
@@ -108,7 +116,8 @@ class UserController
         User $user,
         Request $request,
         SerializerInterface $serializer,
-        EntityManagerInterface $em
+        EntityManagerInterface $em,
+        ValidatorInterface $validator
     ): JsonResponse {
 
         $user = $serializer->deserialize(
@@ -117,6 +126,12 @@ class UserController
             'json',
             [AbstractNormalizer::OBJECT_TO_POPULATE => $user ]
         );
+
+        $errors = $validator->validate($user);
+        if ($errors->count() > 0){
+            return new JsonResponse($serializer->serialize($errors,"json"), JsonResponse::HTTP_BAD_REQUEST);
+        }
+
         $em->flush();
 
         return new JsonResponse(

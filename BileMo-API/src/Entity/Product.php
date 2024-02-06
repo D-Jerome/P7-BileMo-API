@@ -6,9 +6,13 @@ namespace App\Entity;
 
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use App\Repository\ProductRepository;
 use Symfony\Component\Serializer\Annotation\Groups;
+use Symfony\Component\Validator\Constraints as Assert;
+use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 
-#[ORM\Entity()]
+#[ORM\Entity(repositoryClass: ProductRepository::class)]
+#[UniqueEntity('reference')]
 class Product
 {
     /**
@@ -25,6 +29,8 @@ class Product
      */
     #[ORM\Column]
     #[Groups(["get"])]
+    #[Assert\NotBlank()]
+    #[Assert\Length(max: 255)]
     private string $brand;
 
     /**
@@ -32,18 +38,23 @@ class Product
      */
     #[ORM\Column]
     #[Groups(["get"])]
+    #[Assert\NotBlank()]
+    #[Assert\Length(max: 255)]
     private string $name;
 
     /**
      * [Description for $description]
      */
     #[ORM\Column(type: Types::TEXT)]
+    #[Assert\NotBlank()]
     private string $description;
 
     /**
      * [Description for $reference]
      */
     #[ORM\Column]
+    #[Assert\NotBlank()]
+    #[Assert\Length(max: 255)]
     private string $reference;
 
     /**

@@ -5,12 +5,16 @@ declare(strict_types=1);
 namespace App\Entity;
 
 use Doctrine\ORM\Mapping as ORM;
-use Symfony\Component\String\Slugger\SluggerInterface;
-use Symfony\Component\Serializer\Annotation\Groups;
-use Doctrine\Common\Collections\ArrayCollection;
+use App\Repository\CustomerRepository;
 use Doctrine\Common\Collections\Collection;
+use Doctrine\Common\Collections\ArrayCollection;
+use Symfony\Component\Serializer\Annotation\Groups;
+use Symfony\Component\String\Slugger\SluggerInterface;
+use Symfony\Component\Validator\Constraints as Assert;
+use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 
-#[ORM\Entity()]
+#[ORM\Entity(repositoryClass: CustomerRepository::class)]
+#[UniqueEntity('slug')]
 class Customer
 {
     /**
@@ -27,6 +31,9 @@ class Customer
      */
     #[ORM\Column()]
     #[Groups(["get"])]
+    #[Assert\NotNull()]
+    #[Assert\NotBlank()]
+    #[Assert\Length(max: 255)]
     private string $name;
 
     /**
