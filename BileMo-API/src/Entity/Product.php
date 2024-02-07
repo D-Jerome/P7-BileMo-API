@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace App\Entity;
 
+use App\Repository\ProductRepository;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
-use App\Repository\ProductRepository;
+use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 use Symfony\Component\Serializer\Annotation\Groups;
 use Symfony\Component\Validator\Constraints as Assert;
-use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 
 #[ORM\Entity(repositoryClass: ProductRepository::class)]
 #[UniqueEntity(
@@ -24,14 +24,14 @@ class Product
     #[ORM\Id]
     #[ORM\Column(type:'integer')]
     #[ORM\GeneratedValue]
-    #[Groups(["get"])]
+    #[Groups(['get'])]
     private ?int $id = null;
 
     /**
      * [Description for $brand]
      */
     #[ORM\Column(type: 'string', length: 255)]
-    #[Groups(["get"])]
+    #[Groups(['get'])]
     #[Assert\NotBlank()]
     #[Assert\Length(max: 255)]
     private ?string $brand = null;
@@ -40,7 +40,7 @@ class Product
      * [Description for $name]
      */
     #[ORM\Column(type: 'string', length: 255)]
-    #[Groups(["get"])]
+    #[Groups(['get'])]
     #[Assert\NotBlank()]
     #[Assert\Length(max: 255)]
     private ?string $name = null;

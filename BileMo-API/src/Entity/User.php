@@ -4,14 +4,13 @@ declare(strict_types=1);
 
 namespace App\Entity;
 
-use Doctrine\ORM\Mapping as ORM;
 use App\Repository\UserRepository;
-use Symfony\Component\Serializer\Annotation\Groups;
-use Symfony\Component\String\Slugger\SluggerInterface;
-use Symfony\Component\Validator\Constraints as Assert;
-use Symfony\Component\Security\Core\User\UserInterface;
+use Doctrine\ORM\Mapping as ORM;
 use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
+use Symfony\Component\Security\Core\User\UserInterface;
+use Symfony\Component\Serializer\Annotation\Groups;
+use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: UserRepository::class)]
 #[UniqueEntity(
@@ -30,19 +29,16 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
 
     /**
      * [Description for $username]
-     *
-     * @var string
      */
     #[ORM\Column(type: 'string', length: 255, unique: true)]
     #[Assert\NotBlank()]
     #[Assert\Length(min: 5, minMessage: 'Username {{ value }} est trop court, minimum {{ limit }} caractères requis')]
     private string $username;
-    
-    
+
     /**
      * [Description for $email]
      */
-    #[Groups(["get"])]
+    #[Groups(['get'])]
     #[ORM\Column(type: 'string', length: 255)]
     #[Assert\Email()]
     private ?string $email = null;
@@ -58,7 +54,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
      * [Description for $createdAt]
      */
     #[ORM\Column(type:'datetime_immutable')]
-    #[Groups(["get"])]
+    #[Groups(['get'])]
     private ?\DateTimeInterface $createdAt = null;
 
     /**
@@ -66,15 +62,15 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
      *
      * @var array<string>
      */
-    #[ORM\Column(type: 'string', length: 255)]
+    #[ORM\Column(length: 255)]
     private array $roles = ['ROLE_USER'];
 
     /**
      * [Description for $customer]
      */
     #[ORM\ManyToOne(inversedBy: 'users')]
-    #[ORM\JoinColumn(nullable: false)]
-    #[Groups(["get"])]
+    #[ORM\JoinColumn()]
+    #[Groups(['get'])]
     private ?Customer $customer = null;
 
     /**
@@ -209,27 +205,21 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this->username;
     }
 
-   
-
-
     /**
      * Get the value of username
-     *
-     * @return string
      */
-    public function getUsername(): string {
+    public function getUsername(): string
+    {
         return $this->username;
     }
 
     /**
      * Set the value of username
-     *
-     * @param string $username
-     *
-     * @return self
      */
-    public function setUsername(string $username): self {
+    public function setUsername(string $username): self
+    {
         $this->username = $username;
+
         return $this;
     }
 }

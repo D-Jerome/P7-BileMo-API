@@ -39,14 +39,13 @@ class AppFixtures extends Fixture
         }
 
         $user = new User();
-            $user->setUsername($faker->userName());
-            $user->setPassword($this->userPasswordHasher->hashPassword($user, 'password'));
-            $user->setEmail($faker->companyEmail());
-            $user->setRoles(['ROLE_ADMIN']);
-            $user->setCustomer($customerList[array_rand($customerList)]);
-            $manager->persist($user);
+        $user->setUsername($faker->userName());
+        $user->setPassword($this->userPasswordHasher->hashPassword($user, 'password'));
+        $user->setEmail($faker->companyEmail());
+        $user->setRoles(['ROLE_ADMIN']);
+        $manager->persist($user);
 
-        foreach ($customerList as $customer){
+        foreach ($customerList as $customer) {
             $user = new User();
             $user->setUsername($faker->userName());
             $user->setPassword($this->userPasswordHasher->hashPassword($user, 'password'));

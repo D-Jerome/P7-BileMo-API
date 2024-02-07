@@ -22,5 +22,4 @@ class CustomerRepository extends ServiceEntityRepository
     {
         parent::__construct($registry, Customer::class);
     }
-
 }
