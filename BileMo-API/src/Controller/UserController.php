@@ -27,17 +27,21 @@ class UserController extends AbstractController
      * Get all Users
      */
     #[Route(name: 'app_users_collection_get', methods:['GET'])]
-    public function collection(UserRepository $userRepository, SerializerInterface $serializer): JsonResponse
+    public function collection(Request $request, UserRepository $userRepository, SerializerInterface $serializer): JsonResponse
     {
         /**
          * @var User $connectedUser
          */
         $connectedUser = $this->getUser();
+        /** @var int $page */
+        $page = (int)($request->get('page', 1));
+        /** @var int $limit */
+        $limit = (int)$request->get('limit', 4);
 
         if ($connectedUser->getRoles() === ['ROLE_ADMIN']) {
-            $repo = $userRepository->findAll();
+            $repo = $userRepository->findAllWithPagination($page, $limit);
         } else {
-            $repo = $userRepository->findBy(['customer' => $connectedUser->getCustomer()]);
+            $repo = $userRepository->findByWithPagination(['customer' => $connectedUser->getCustomer()], $page, $limit);
         }
 
         return new JsonResponse(
@@ -133,7 +137,10 @@ class UserController extends AbstractController
 
         return new JsonResponse(
             $serializer->serialize(
-                $user, 'json', ['groups' => 'get']),
+                $user,
+                'json',
+                ['groups' => 'get']
+            ),
             JsonResponse::HTTP_CREATED,
             ['Location' => $urlGenerator->generate('app_users_item_get', ['id' => $user->getId()])],
             true

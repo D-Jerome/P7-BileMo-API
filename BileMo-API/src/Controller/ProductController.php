@@ -26,10 +26,32 @@ class ProductController
      * Get all Products
      */
     #[Route(name: 'app_products_collection_get', methods:['GET'])]
-    public function collection(ProductRepository $productRepository, SerializerInterface $serializer): JsonResponse
-    {
+    public function collection(
+        Request $request,
+        ProductRepository $productRepository,
+        SerializerInterface $serializer
+    ): JsonResponse {
+        /** @var int $page */
+        $page = (int)$request->get('page', 1);
+        /** @var int $limit */
+        $limit = (int)$request->get('limit', 4);
+        /** @var string $brand */
+        $brand = htmlspecialchars((string)$request->get('brand'));
+
+
+        if (!$brand) {
+            $repo = $productRepository->findAllWithPagination($page, $limit);
+        } else {
+            $repo = $productRepository->findByWithPagination($brand, $page, $limit);
+        }
+        if ($repo === []) {
+            return new JsonResponse(
+                $repo,
+                JsonResponse::HTTP_BAD_REQUEST
+            );
+        }
         return new JsonResponse(
-            $serializer->serialize($productRepository->findAll(), 'json', ['groups' => 'get']),
+            $serializer->serialize($repo, 'json', ['groups' => 'get']),
             JsonResponse::HTTP_OK,
             [],
             true
@@ -67,7 +89,10 @@ class ProductController
 
         $errors = $validator->validate($product);
         if ($errors->count() > 0) {
-            return new JsonResponse($serializer->serialize($errors, 'json'), JsonResponse::HTTP_BAD_REQUEST);
+            return new JsonResponse(
+                $serializer->serialize($errors, 'json'),
+                JsonResponse::HTTP_BAD_REQUEST
+            );
         }
 
         $em->persist($product);
@@ -84,7 +109,11 @@ class ProductController
         return new JsonResponse(
             $serializer->serialize($product, 'json', ['groups' => 'get']),
             JsonResponse::HTTP_CREATED,
-            ['Location' => $urlGenerator->generate('app_Products_item_get', ['id' => $product->getId()])],
+            ['Location' => $urlGenerator->generate(
+                'app_Products_item_get',
+                ['id' => $product->getId()]
+            )
+            ],
             true
         );
     }
@@ -110,7 +139,10 @@ class ProductController
 
         $errors = $validator->validate($product);
         if ($errors->count() > 0) {
-            return new JsonResponse($serializer->serialize($errors, 'json'), JsonResponse::HTTP_BAD_REQUEST);
+            return new JsonResponse(
+                $serializer->serialize($errors, 'json'),
+                JsonResponse::HTTP_BAD_REQUEST
+            );
         }
 
         $em->flush();
