@@ -1,3 +1,7 @@
+includes:
+    - vendor/phpstan/phpstan-doctrine/extension.neon
+    - vendor/phpstan/phpstan-doctrine/rules.neon
+
 parameters:
     level: 9
     paths:
@@ -5,4 +9,7 @@ parameters:
         - config/
         - public/
         - src/
-        
+
+doctrine:
+    ormRepositoryClass: MyApp\Doctrine\BetterEntityRepository
+    odmRepositoryClass: MyApp\Doctrine\BetterDocumentRepository

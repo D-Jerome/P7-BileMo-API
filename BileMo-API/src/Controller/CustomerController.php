@@ -28,15 +28,18 @@ class CustomerController extends AbstractController
      */
     #[Route(name: 'app_customers_collection_get', methods:['GET'])]
     #[IsGranted('ROLE_COMPANY_ADMIN', message: 'You are not allowed to access')]
-    public function collection(CustomerRepository $customerRepository, SerializerInterface $serializer): JsonResponse
+    public function collection(Request $request, CustomerRepository $customerRepository, SerializerInterface $serializer): JsonResponse
     {
         /**
          * @var User $connectedUser
          */
         $connectedUser = $this->getUser();
-
+        /** @var int $page */
+        $page = (int)($request->get('page', 1));
+        /** @var int $limit */
+        $limit = (int)$request->get('limit', 4);
         if ($connectedUser->getRoles() === ['ROLE_ADMIN']) {
-            $repo = $customerRepository->findAll();
+            $repo = $customerRepository->findAllWithPagination($page, $limit);
         } else {
             $repo = $customerRepository->findBy(['id' => $connectedUser->getCustomer()]);
         }
