@@ -7,13 +7,13 @@ namespace App\Controller;
 use App\Entity\Product;
 use App\Repository\ProductRepository;
 use Doctrine\ORM\EntityManagerInterface;
+use JMS\Serializer\SerializationContext;
+use JMS\Serializer\SerializerInterface;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
-use Symfony\Component\Serializer\Normalizer\AbstractNormalizer;
-use Symfony\Component\Serializer\SerializerInterface;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 
 /**
@@ -32,26 +32,27 @@ class ProductController
         SerializerInterface $serializer
     ): JsonResponse {
         /** @var int $page */
-        $page = (int)$request->get('page', 1);
+        $page = (int) $request->get('page', 1);
         /** @var int $limit */
-        $limit = (int)$request->get('limit', 4);
+        $limit = (int) $request->get('limit', 4);
         /** @var string $brand */
-        $brand = htmlspecialchars((string)$request->get('brand'));
-
+        $brand = htmlspecialchars((string) $request->get('brand'));
 
         if (!$brand) {
             $repo = $productRepository->findAllWithPagination($page, $limit);
         } else {
             $repo = $productRepository->findByWithPagination($brand, $page, $limit);
         }
-        if ($repo === []) {
+        if ([] === $repo) {
             return new JsonResponse(
                 $repo,
                 JsonResponse::HTTP_BAD_REQUEST
             );
         }
+        $context = SerializationContext::create()->setGroups(['get']);
+
         return new JsonResponse(
-            $serializer->serialize($repo, 'json', ['groups' => 'get']),
+            $serializer->serialize($repo, 'json', $context),
             JsonResponse::HTTP_OK,
             [],
             true
@@ -64,8 +65,10 @@ class ProductController
     #[Route('/{id}', name: 'app_products_item_get', methods:['GET'])]
     public function item(Product $product, SerializerInterface $serializer): JsonResponse
     {
+        $context = SerializationContext::create()->setGroups(['get']);
+
         return new JsonResponse(
-            $serializer->serialize($product, 'json', ['groups' => 'get']),
+            $serializer->serialize($product, 'json', $context),
             JsonResponse::HTTP_OK,
             [],
             true
@@ -86,7 +89,7 @@ class ProductController
     ): JsonResponse {
         /** @var Product $product */
         $product = $serializer->deserialize($request->getContent(), Product::class, 'json');
-
+        $context = SerializationContext::create()->setGroups(['get']);
         $errors = $validator->validate($product);
         if ($errors->count() > 0) {
             return new JsonResponse(
@@ -107,12 +110,12 @@ class ProductController
         $em->flush();
 
         return new JsonResponse(
-            $serializer->serialize($product, 'json', ['groups' => 'get']),
+            $serializer->serialize($product, 'json', $context),
             JsonResponse::HTTP_CREATED,
             ['Location' => $urlGenerator->generate(
                 'app_Products_item_get',
                 ['id' => $product->getId()]
-            )
+            ),
             ],
             true
         );
@@ -124,20 +127,24 @@ class ProductController
     #[Route('/{id}', name: 'app_products_item_put', methods:['PUT'])]
     #[IsGranted('ROLE_ADMIN', message: 'You are not allowed to access')]
     public function put(
-        Product $product,
+        Product $currentProduct,
         Request $request,
         SerializerInterface $serializer,
         EntityManagerInterface $em,
         ValidatorInterface $validator
     ): JsonResponse {
-        $product = $serializer->deserialize(
+        $newProduct = $serializer->deserialize(
             $request->getContent(),
             Product::class,
-            'json',
-            [AbstractNormalizer::OBJECT_TO_POPULATE => $product]
+            'json'
         );
 
-        $errors = $validator->validate($product);
+        $currentProduct->setName($newProduct->getName());
+        $currentProduct->setBrand($newProduct->getBrand());
+        $currentProduct->setDescription($newProduct->getDescription());
+        $currentProduct->setReference($newProduct->getReference());
+
+        $errors = $validator->validate($currentProduct);
         if ($errors->count() > 0) {
             return new JsonResponse(
                 $serializer->serialize($errors, 'json'),

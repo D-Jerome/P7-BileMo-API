@@ -7,14 +7,14 @@ namespace App\Controller;
 use App\Entity\User;
 use App\Repository\UserRepository;
 use Doctrine\ORM\EntityManagerInterface;
+use JMS\Serializer\SerializationContext;
+use JMS\Serializer\SerializerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
-use Symfony\Component\Serializer\Normalizer\AbstractNormalizer;
-use Symfony\Component\Serializer\SerializerInterface;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 
 /**
@@ -27,28 +27,32 @@ class UserController extends AbstractController
      * Get all Users
      */
     #[Route(name: 'app_users_collection_get', methods:['GET'])]
-    public function collection(Request $request, UserRepository $userRepository, SerializerInterface $serializer): JsonResponse
-    {
+    public function collection(
+        Request $request,
+        UserRepository $userRepository,
+        SerializerInterface $serializer
+    ): JsonResponse {
         /**
          * @var User $connectedUser
          */
         $connectedUser = $this->getUser();
         /** @var int $page */
-        $page = (int)($request->get('page', 1));
+        $page = (int) $request->get('page', 1);
         /** @var int $limit */
-        $limit = (int)$request->get('limit', 4);
+        $limit = (int) $request->get('limit', 4);
 
         if ($connectedUser->getRoles() === ['ROLE_ADMIN']) {
             $repo = $userRepository->findAllWithPagination($page, $limit);
         } else {
             $repo = $userRepository->findByWithPagination(['customer' => $connectedUser->getCustomer()], $page, $limit);
         }
+        $context = SerializationContext::create()->setGroups(['get']);
 
         return new JsonResponse(
             $serializer->serialize(
                 $repo,
                 'json',
-                ['groups' => 'get']
+                $context
             ),
             JsonResponse::HTTP_OK,
             [],
@@ -60,15 +64,18 @@ class UserController extends AbstractController
      * Get One User by Id
      */
     #[Route('/{id}', name: 'app_users_item_get', methods:['GET'])]
-    public function item(User $user, SerializerInterface $serializer): JsonResponse
-    {
+    public function item(
+        User $user,
+        SerializerInterface $serializer
+    ): JsonResponse {
         /**
          * @var User $connectedUser
          */
         $connectedUser = $this->getUser();
+        $context = SerializationContext::create()->setGroups(['get']);
         if ($connectedUser->getRoles() === ['ROLE_ADMIN']) {
             return new JsonResponse(
-                $serializer->serialize($user, 'json', ['groups' => 'get']),
+                $serializer->serialize($user, 'json', $context),
                 JsonResponse::HTTP_OK,
                 [],
                 true
@@ -82,7 +89,7 @@ class UserController extends AbstractController
         }
 
         return new JsonResponse(
-            $serializer->serialize($user, 'json', ['groups' => 'get']),
+            $serializer->serialize($user, 'json', $context),
             JsonResponse::HTTP_OK,
             [],
             true
@@ -105,7 +112,7 @@ class UserController extends AbstractController
          * @var User $connectedUser
          */
         $connectedUser = $this->getUser();
-
+        $context = SerializationContext::create()->setGroups(['get']);
         /** @var User $user */
         $user = $serializer->deserialize($request->getContent(), User::class, 'json');
 
@@ -139,7 +146,7 @@ class UserController extends AbstractController
             $serializer->serialize(
                 $user,
                 'json',
-                ['groups' => 'get']
+                $context
             ),
             JsonResponse::HTTP_CREATED,
             ['Location' => $urlGenerator->generate('app_users_item_get', ['id' => $user->getId()])],
@@ -152,7 +159,7 @@ class UserController extends AbstractController
      */
     #[Route('/{id}', name: 'app_users_item_put', methods:['PUT'])]
     public function put(
-        User $user,
+        User $currentUser,
         Request $request,
         SerializerInterface $serializer,
         EntityManagerInterface $em,
@@ -164,7 +171,7 @@ class UserController extends AbstractController
          */
         $connectedUser = $this->getUser();
 
-        if ($connectedUser->getCustomer() !== $user->getCustomer()) {
+        if ($connectedUser->getCustomer() !== $currentUser->getCustomer()) {
             return new JsonResponse(
                 null,
                 JsonResponse::HTTP_UNAUTHORIZED
@@ -175,22 +182,29 @@ class UserController extends AbstractController
             User::class,
             'json'
         );
-        $user = $serializer->deserialize(
+        $newUser = $serializer->deserialize(
             $request->getContent(),
             User::class,
-            'json',
-            [AbstractNormalizer::OBJECT_TO_POPULATE => $user]
+            'json'
         );
 
-        $errors = $validator->validate($user);
+        $currentUser->setUsername($newUser->getUsername());
+        $currentUser->setEmail($newUser->getEmail());
+        $currentUser->setPassword($newUser->getPassword());
+        $currentUser->setRoles($newUser->getRoles());
+
+        $errors = $validator->validate($currentUser);
         if ($errors->count() > 0) {
-            return new JsonResponse($serializer->serialize($errors, 'json'), JsonResponse::HTTP_BAD_REQUEST);
+            return new JsonResponse(
+                $serializer->serialize($errors, 'json'),
+                JsonResponse::HTTP_BAD_REQUEST
+            );
         }
-        if ($userDataToChange->getPassword()) {
-            $user->setPassword(
+        if ($newUser->getPassword()) {
+            $currentUser->setPassword(
                 $userPasswordHasher->hashPassword(
-                    $user,
-                    $user->getPassword()
+                    $currentUser,
+                    $newUser->getPassword()
                 )
             );
         }
@@ -206,8 +220,10 @@ class UserController extends AbstractController
      * Delete One User by Id
      */
     #[Route('/{id}', name: 'app_users_item_delete', methods:['DELETE'])]
-    public function delete(User $user, EntityManagerInterface $em): JsonResponse
-    {
+    public function delete(
+        User $user,
+        EntityManagerInterface $em
+    ): JsonResponse {
         /**
          * @var User $connectedUser
          */

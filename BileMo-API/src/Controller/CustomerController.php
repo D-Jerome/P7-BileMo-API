@@ -7,14 +7,14 @@ namespace App\Controller;
 use App\Entity\Customer;
 use App\Repository\CustomerRepository;
 use Doctrine\ORM\EntityManagerInterface;
+use JMS\Serializer\SerializationContext;
+use JMS\Serializer\SerializerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
-use Symfony\Component\Serializer\Normalizer\AbstractNormalizer;
-use Symfony\Component\Serializer\SerializerInterface;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 
 /**
@@ -28,24 +28,28 @@ class CustomerController extends AbstractController
      */
     #[Route(name: 'app_customers_collection_get', methods:['GET'])]
     #[IsGranted('ROLE_COMPANY_ADMIN', message: 'You are not allowed to access')]
-    public function collection(Request $request, CustomerRepository $customerRepository, SerializerInterface $serializer): JsonResponse
-    {
+    public function collection(
+        Request $request,
+        CustomerRepository $customerRepository,
+        SerializerInterface $serializer
+    ): JsonResponse {
         /**
          * @var User $connectedUser
          */
         $connectedUser = $this->getUser();
         /** @var int $page */
-        $page = (int)($request->get('page', 1));
+        $page = (int) $request->get('page', 1);
         /** @var int $limit */
-        $limit = (int)$request->get('limit', 4);
+        $limit = (int) $request->get('limit', 4);
         if ($connectedUser->getRoles() === ['ROLE_ADMIN']) {
             $repo = $customerRepository->findAllWithPagination($page, $limit);
         } else {
             $repo = $customerRepository->findBy(['id' => $connectedUser->getCustomer()]);
         }
+        $context = SerializationContext::create()->setGroups(['get']);
 
         return new JsonResponse(
-            $serializer->serialize($repo, 'json', ['groups' => 'get']),
+            $serializer->serialize($repo, 'json', $context),
             JsonResponse::HTTP_OK,
             [],
             true
@@ -57,16 +61,18 @@ class CustomerController extends AbstractController
      */
     #[Route('/{id}', name: 'app_customers_item_get', methods:['GET'])]
     #[IsGranted('ROLE_COMPANY_ADMIN', message: 'You are not allowed to access')]
-    public function item(Customer $customer, SerializerInterface $serializer): JsonResponse
-    {
+    public function item(
+        Customer $customer,
+        SerializerInterface $serializer
+    ): JsonResponse {
         /**
          * @var User $connectedUser
          */
         $connectedUser = $this->getUser();
-
+        $context = SerializationContext::create()->setGroups(['get']);
         if ($connectedUser->getRoles() === ['ROLE_ADMIN']) {
             return new JsonResponse(
-                $serializer->serialize($customer, 'json', ['groups' => 'get']),
+                $serializer->serialize($customer, 'json', $context),
                 JsonResponse::HTTP_OK,
                 [],
                 true
@@ -81,7 +87,7 @@ class CustomerController extends AbstractController
         }
 
         return new JsonResponse(
-            $serializer->serialize($customer, 'json', ['groups' => 'get']),
+            $serializer->serialize($customer, 'json', $context),
             JsonResponse::HTTP_OK,
             [],
             true
@@ -102,10 +108,13 @@ class CustomerController extends AbstractController
     ): JsonResponse {
         /** @var Customer $customer */
         $customer = $serializer->deserialize($request->getContent(), Customer::class, 'json');
-
+        $context = SerializationContext::create()->setGroups(['get']);
         $errors = $validator->validate($customer);
         if ($errors->count() > 0) {
-            return new JsonResponse($serializer->serialize($errors, 'json'), JsonResponse::HTTP_BAD_REQUEST);
+            return new JsonResponse(
+                $serializer->serialize($errors, 'json'),
+                JsonResponse::HTTP_BAD_REQUEST
+            );
         }
 
         $em->persist($customer);
@@ -121,9 +130,12 @@ class CustomerController extends AbstractController
         $em->flush();
 
         return new JsonResponse(
-            $serializer->serialize($customer, 'json', ['groups' => 'get']),
+            $serializer->serialize($customer, 'json', $context),
             JsonResponse::HTTP_CREATED,
-            ['Location' => $urlGenerator->generate('app_customers_item_get', ['id' => $customer->getId()])],
+            ['Location' => $urlGenerator->generate(
+                'app_customers_item_get',
+                ['id' => $customer->getId()]
+            )],
             true
         );
     }
@@ -134,22 +146,27 @@ class CustomerController extends AbstractController
     #[Route('/{id}', name: 'app_customers_item_put', methods:['PUT'])]
     #[IsGranted('ROLE_ADMIN', message: 'You are not allowed to access')]
     public function put(
-        Customer $customer,
+        Customer $currentCustomer,
         Request $request,
         SerializerInterface $serializer,
         EntityManagerInterface $em,
         ValidatorInterface $validator
     ): JsonResponse {
-        $customer = $serializer->deserialize(
+        /** @var User $newCustomer */
+        $newCustomer = $serializer->deserialize(
             $request->getContent(),
             Customer::class,
-            'json',
-            [AbstractNormalizer::OBJECT_TO_POPULATE => $customer]
+            'json'
         );
 
-        $errors = $validator->validate($customer);
+        $currentCustomer->setName($newCustomer->getName());
+
+        $errors = $validator->validate($currentCustomer);
         if ($errors->count() > 0) {
-            return new JsonResponse($serializer->serialize($errors, 'json'), JsonResponse::HTTP_BAD_REQUEST);
+            return new JsonResponse(
+                $serializer->serialize($errors, 'json'),
+                JsonResponse::HTTP_BAD_REQUEST
+            );
         }
 
         $em->flush();
@@ -165,8 +182,10 @@ class CustomerController extends AbstractController
      */
     #[Route('/{id}', name: 'app_customers_item_delete', methods:['DELETE'])]
     #[IsGranted('ROLE_ADMIN', message: 'You are not allowed to access')]
-    public function delete(Customer $customer, EntityManagerInterface $em): JsonResponse
-    {
+    public function delete(
+        Customer $customer,
+        EntityManagerInterface $em
+    ): JsonResponse {
         $em->remove($customer);
         $em->flush();
 

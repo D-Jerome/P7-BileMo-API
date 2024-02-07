@@ -36,13 +36,13 @@ class UserRepository extends ServiceEntityRepository
     public function findByWithPagination($customer, int $page, int $limit)
     {
         return $this->createQueryBuilder('u')
-               ->andWhere('u.customer = :customer')
-               ->setParameter('customer', $customer)
-               ->orderBy('u.id', 'ASC')
-               ->setFirstResult(($page - 1) * $limit)
-                ->setMaxResults($limit)
-               ->getQuery()
-               ->getResult()
+            ->andWhere('u.customer = :customer')
+            ->setParameter('customer', $customer)
+            ->orderBy('u.id', 'ASC')
+            ->setFirstResult(($page - 1) * $limit)
+            ->setMaxResults($limit)
+            ->getQuery()
+            ->getResult()
         ;
     }
 }
