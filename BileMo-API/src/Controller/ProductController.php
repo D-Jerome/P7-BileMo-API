@@ -7,14 +7,16 @@ namespace App\Controller;
 use App\Entity\Product;
 use App\Repository\ProductRepository;
 use Doctrine\ORM\EntityManagerInterface;
-use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Contracts\Cache\ItemInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Annotation\Route;
-use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
-use Symfony\Component\Security\Http\Attribute\IsGranted;
-use Symfony\Component\Serializer\Normalizer\AbstractNormalizer;
+use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Contracts\Cache\TagAwareCacheInterface;
 use Symfony\Component\Serializer\SerializerInterface;
+use Symfony\Component\Security\Http\Attribute\IsGranted;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
+use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
+use Symfony\Component\Serializer\Normalizer\AbstractNormalizer;
 
 /**
  * class ProductController
@@ -29,7 +31,8 @@ class ProductController
     public function collection(
         Request $request,
         ProductRepository $productRepository,
-        SerializerInterface $serializer
+        SerializerInterface $serializer,
+        TagAwareCacheInterface $cachePool
     ): JsonResponse {
         /** @var int $page */
         $page = (int)$request->get('page', 1);
@@ -50,8 +53,18 @@ class ProductController
                 JsonResponse::HTTP_BAD_REQUEST
             );
         }
+
+        $idCache = "getCustomersCollection-" . $page . "-" . $limit;
+        $productsList = $cachePool->get(
+            $idCache,
+            function (ItemInterface $item) use ($repo) {
+                $item->tag("productsCache");
+                return $repo;
+            }
+        );
+        
         return new JsonResponse(
-            $serializer->serialize($repo, 'json', ['groups' => 'get']),
+            $serializer->serialize($productsList, 'json', ['groups' => 'get']),
             JsonResponse::HTTP_OK,
             [],
             true
@@ -62,7 +75,11 @@ class ProductController
      * Get One Product by Id
      */
     #[Route('/{id}', name: 'app_products_item_get', methods:['GET'])]
-    public function item(Product $product, SerializerInterface $serializer): JsonResponse
+    public function item(
+        Product $product, 
+        SerializerInterface $serializer,
+        TagAwareCacheInterface $cachePool
+        ): JsonResponse
     {
         return new JsonResponse(
             $serializer->serialize($product, 'json', ['groups' => 'get']),
@@ -82,7 +99,8 @@ class ProductController
         SerializerInterface $serializer,
         EntityManagerInterface $em,
         UrlGeneratorInterface $urlGenerator,
-        ValidatorInterface $validator
+        ValidatorInterface $validator,
+        TagAwareCacheInterface $cachePool
     ): JsonResponse {
         /** @var Product $product */
         $product = $serializer->deserialize($request->getContent(), Product::class, 'json');
@@ -104,6 +122,7 @@ class ProductController
                 JsonResponse::HTTP_BAD_REQUEST
             );
         }
+        $cachePool->invalidateTags(['productsCache']);
         $em->flush();
 
         return new JsonResponse(
@@ -128,7 +147,8 @@ class ProductController
         Request $request,
         SerializerInterface $serializer,
         EntityManagerInterface $em,
-        ValidatorInterface $validator
+        ValidatorInterface $validator,
+        TagAwareCacheInterface $cachePool
     ): JsonResponse {
         $product = $serializer->deserialize(
             $request->getContent(),
@@ -144,7 +164,7 @@ class ProductController
                 JsonResponse::HTTP_BAD_REQUEST
             );
         }
-
+        $cachePool->invalidateTags(['productsCache']);
         $em->flush();
 
         return new JsonResponse(
@@ -158,8 +178,14 @@ class ProductController
      */
     #[Route('/{id}', name: 'app_products_item_delete', methods:['DELETE'])]
     #[IsGranted('ROLE_ADMIN', message: 'You are not allowed to access')]
-    public function delete(Product $product, EntityManagerInterface $em): JsonResponse
+    public function delete(
+        Product $product, 
+        EntityManagerInterface $em,
+        TagAwareCacheInterface $cachePool
+        ): JsonResponse
     {
+        $cachePool->invalidateTags(['productsCache']);
+        
         $em->remove($product);
         $em->flush();
 

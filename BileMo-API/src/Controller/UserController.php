@@ -7,15 +7,17 @@ namespace App\Controller;
 use App\Entity\User;
 use App\Repository\UserRepository;
 use Doctrine\ORM\EntityManagerInterface;
-use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
-use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Contracts\Cache\ItemInterface;
 use Symfony\Component\HttpFoundation\Request;
-use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use Symfony\Component\Routing\Annotation\Route;
-use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
-use Symfony\Component\Serializer\Normalizer\AbstractNormalizer;
+use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Contracts\Cache\TagAwareCacheInterface;
 use Symfony\Component\Serializer\SerializerInterface;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
+use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
+use Symfony\Component\Serializer\Normalizer\AbstractNormalizer;
+use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 
 /**
  * class UserController
@@ -27,8 +29,12 @@ class UserController extends AbstractController
      * Get all Users
      */
     #[Route(name: 'app_users_collection_get', methods:['GET'])]
-    public function collection(Request $request, UserRepository $userRepository, SerializerInterface $serializer): JsonResponse
-    {
+    public function collection(
+        Request $request,
+        UserRepository $userRepository,
+        SerializerInterface $serializer,
+        TagAwareCacheInterface $cachePool
+    ): JsonResponse {
         /**
          * @var User $connectedUser
          */
@@ -38,18 +44,26 @@ class UserController extends AbstractController
         /** @var int $limit */
         $limit = (int)$request->get('limit', 4);
 
-        if ($connectedUser->getRoles() === ['ROLE_ADMIN']) {
-            $repo = $userRepository->findAllWithPagination($page, $limit);
-        } else {
-            $repo = $userRepository->findByWithPagination(['customer' => $connectedUser->getCustomer()], $page, $limit);
-        }
 
+        $idCache = "getUsersCollection-" . $page . "-" . $limit;
+        $jsonUsersList = $cachePool->get(
+            $idCache,
+            function (ItemInterface $item) use ($connectedUser, $userRepository, $page, $limit, $serializer) {
+                $item->tag("usersCache");
+                if ($connectedUser->getRoles() === ['ROLE_ADMIN']) {
+                    $repo = $userRepository->findAllWithPagination($page, $limit);
+                } else {
+                    $repo = $userRepository->findByWithPagination(['customer' => $connectedUser->getCustomer()], $page, $limit);
+                }
+                return $serializer->serialize(
+                    $repo,
+                    'json',
+                    ['groups' => 'get']
+                );
+            }
+        );
         return new JsonResponse(
-            $serializer->serialize(
-                $repo,
-                'json',
-                ['groups' => 'get']
-            ),
+            $jsonUsersList,
             JsonResponse::HTTP_OK,
             [],
             true
@@ -60,8 +74,11 @@ class UserController extends AbstractController
      * Get One User by Id
      */
     #[Route('/{id}', name: 'app_users_item_get', methods:['GET'])]
-    public function item(User $user, SerializerInterface $serializer): JsonResponse
-    {
+    public function item(
+        User $user,
+        SerializerInterface $serializer,
+        TagAwareCacheInterface $cachePool
+    ): JsonResponse {
         /**
          * @var User $connectedUser
          */
@@ -99,7 +116,8 @@ class UserController extends AbstractController
         EntityManagerInterface $em,
         UrlGeneratorInterface $urlGenerator,
         ValidatorInterface $validator,
-        UserPasswordHasherInterface $userPasswordHasher
+        UserPasswordHasherInterface $userPasswordHasher,
+        TagAwareCacheInterface $cachePool
     ): JsonResponse {
         /**
          * @var User $connectedUser
@@ -132,7 +150,7 @@ class UserController extends AbstractController
                 JsonResponse::HTTP_BAD_REQUEST
             );
         }
-
+        $cachePool->invalidateTags(['usersCache']);
         $em->flush();
 
         return new JsonResponse(
@@ -157,7 +175,8 @@ class UserController extends AbstractController
         SerializerInterface $serializer,
         EntityManagerInterface $em,
         ValidatorInterface $validator,
-        UserPasswordHasherInterface $userPasswordHasher
+        UserPasswordHasherInterface $userPasswordHasher,
+        TagAwareCacheInterface $cachePool
     ): JsonResponse {
         /**
          * @var User $connectedUser
@@ -194,6 +213,7 @@ class UserController extends AbstractController
                 )
             );
         }
+        $cachePool->invalidateTags(['usersCache']);
         $em->flush();
 
         return new JsonResponse(
@@ -206,8 +226,11 @@ class UserController extends AbstractController
      * Delete One User by Id
      */
     #[Route('/{id}', name: 'app_users_item_delete', methods:['DELETE'])]
-    public function delete(User $user, EntityManagerInterface $em): JsonResponse
-    {
+    public function delete(
+        User $user,
+        EntityManagerInterface $em,
+        TagAwareCacheInterface $cachePool
+    ): JsonResponse {
         /**
          * @var User $connectedUser
          */
@@ -219,7 +242,7 @@ class UserController extends AbstractController
                 JsonResponse::HTTP_UNAUTHORIZED
             );
         }
-
+        $cachePool->invalidateTags(['usersCache']);
         $em->remove($user);
         $em->flush();
 

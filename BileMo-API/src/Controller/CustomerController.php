@@ -7,15 +7,17 @@ namespace App\Controller;
 use App\Entity\Customer;
 use App\Repository\CustomerRepository;
 use Doctrine\ORM\EntityManagerInterface;
-use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
-use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Annotation\Route;
-use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
-use Symfony\Component\Security\Http\Attribute\IsGranted;
-use Symfony\Component\Serializer\Normalizer\AbstractNormalizer;
+use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Contracts\Cache\TagAwareCacheInterface;
 use Symfony\Component\Serializer\SerializerInterface;
+use Symfony\Component\Security\Http\Attribute\IsGranted;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
+use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
+use Symfony\Component\Serializer\Normalizer\AbstractNormalizer;
+use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Contracts\Cache\ItemInterface;
 
 /**
  * class CustomerController
@@ -28,8 +30,12 @@ class CustomerController extends AbstractController
      */
     #[Route(name: 'app_customers_collection_get', methods:['GET'])]
     #[IsGranted('ROLE_COMPANY_ADMIN', message: 'You are not allowed to access')]
-    public function collection(Request $request, CustomerRepository $customerRepository, SerializerInterface $serializer): JsonResponse
-    {
+    public function collection(
+        Request $request,
+        CustomerRepository $customerRepository,
+        SerializerInterface $serializer,
+        TagAwareCacheInterface $cachePool
+    ): JsonResponse {
         /**
          * @var User $connectedUser
          */
@@ -43,9 +49,19 @@ class CustomerController extends AbstractController
         } else {
             $repo = $customerRepository->findBy(['id' => $connectedUser->getCustomer()]);
         }
+        $idCache = "getCustomersCollection-" . $page . "-" . $limit;
+        $customersList = $cachePool->get(
+            $idCache,
+            function (ItemInterface $item) use ($repo) {
+                $item->tag("customersCache");
+                return $repo;
+            }
+        );
+
+
 
         return new JsonResponse(
-            $serializer->serialize($repo, 'json', ['groups' => 'get']),
+            $serializer->serialize($customersList, 'json', ['groups' => 'get']),
             JsonResponse::HTTP_OK,
             [],
             true
@@ -57,8 +73,11 @@ class CustomerController extends AbstractController
      */
     #[Route('/{id}', name: 'app_customers_item_get', methods:['GET'])]
     #[IsGranted('ROLE_COMPANY_ADMIN', message: 'You are not allowed to access')]
-    public function item(Customer $customer, SerializerInterface $serializer): JsonResponse
-    {
+    public function item(
+        Customer $customer,
+        SerializerInterface $serializer,
+        TagAwareCacheInterface $cachePool
+    ): JsonResponse {
         /**
          * @var User $connectedUser
          */
@@ -98,7 +117,8 @@ class CustomerController extends AbstractController
         SerializerInterface $serializer,
         EntityManagerInterface $em,
         UrlGeneratorInterface $urlGenerator,
-        ValidatorInterface $validator
+        ValidatorInterface $validator,
+        TagAwareCacheInterface $cachePool
     ): JsonResponse {
         /** @var Customer $customer */
         $customer = $serializer->deserialize($request->getContent(), Customer::class, 'json');
@@ -117,7 +137,7 @@ class CustomerController extends AbstractController
                 JsonResponse::HTTP_BAD_REQUEST
             );
         }
-
+        $cachePool->invalidateTags(['customersCache']);
         $em->flush();
 
         return new JsonResponse(
@@ -138,7 +158,8 @@ class CustomerController extends AbstractController
         Request $request,
         SerializerInterface $serializer,
         EntityManagerInterface $em,
-        ValidatorInterface $validator
+        ValidatorInterface $validator,
+        TagAwareCacheInterface $cachePool
     ): JsonResponse {
         $customer = $serializer->deserialize(
             $request->getContent(),
@@ -151,6 +172,7 @@ class CustomerController extends AbstractController
         if ($errors->count() > 0) {
             return new JsonResponse($serializer->serialize($errors, 'json'), JsonResponse::HTTP_BAD_REQUEST);
         }
+        $cachePool->invalidateTags(['customersCache']);
 
         $em->flush();
 
@@ -165,10 +187,17 @@ class CustomerController extends AbstractController
      */
     #[Route('/{id}', name: 'app_customers_item_delete', methods:['DELETE'])]
     #[IsGranted('ROLE_ADMIN', message: 'You are not allowed to access')]
-    public function delete(Customer $customer, EntityManagerInterface $em): JsonResponse
-    {
+    public function delete(
+        Customer $customer,
+        EntityManagerInterface $em,
+        TagAwareCacheInterface $cachePool
+    ): JsonResponse {
+
+        $cachePool->invalidateTags(['customersCache']);
+
         $em->remove($customer);
         $em->flush();
+
 
         return new JsonResponse(
             null,
