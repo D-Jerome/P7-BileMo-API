@@ -38,11 +38,28 @@ class AppFixtures extends Fixture
             $manager->persist($customer);
         }
 
-        for($i = 0; $i <= 10; ++$i) {
+        $user = new User();
+        $user->setUsername($faker->userName());
+        $user->setPassword($this->userPasswordHasher->hashPassword($user, 'password'));
+        $user->setEmail($faker->companyEmail());
+        $user->setRoles(['ROLE_ADMIN']);
+        $manager->persist($user);
+
+        foreach ($customerList as $customer) {
             $user = new User();
+            $user->setUsername($faker->userName());
             $user->setPassword($this->userPasswordHasher->hashPassword($user, 'password'));
             $user->setEmail($faker->companyEmail());
-            $user->setRoles(['ROLE_USER']);
+            $user->setRoles(['ROLE_COMPANY_ADMIN']);
+            $user->setCustomer($customerList[array_rand($customerList)]);
+            $manager->persist($user);
+        }
+
+        for($i = 0; $i <= 10; ++$i) {
+            $user = new User();
+            $user->setUsername($faker->userName());
+            $user->setPassword($this->userPasswordHasher->hashPassword($user, 'password'));
+            $user->setEmail($faker->companyEmail());
             $user->setCustomer($customerList[array_rand($customerList)]);
             $manager->persist($user);
         }

@@ -9,7 +9,7 @@ use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
 /**
- * @extends ServiceEntityRepository<Customer>
+ * @extends ServiceEntityRepository <Customer>
  *
  * @method Customer|null find($id, $lockMode = null, $lockVersion = null)
  * @method Customer|null findOneBy(array $criteria, array $orderBy = null)
@@ -22,5 +22,4 @@ class UserRepository extends ServiceEntityRepository
     {
         parent::__construct($registry, User::class);
     }
-
 }

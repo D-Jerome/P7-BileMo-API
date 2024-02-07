@@ -4,15 +4,18 @@ declare(strict_types=1);
 
 namespace App\Entity;
 
+use App\Repository\ProductRepository;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
-use App\Repository\ProductRepository;
+use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 use Symfony\Component\Serializer\Annotation\Groups;
 use Symfony\Component\Validator\Constraints as Assert;
-use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 
 #[ORM\Entity(repositoryClass: ProductRepository::class)]
-#[UniqueEntity('reference')]
+#[UniqueEntity(
+    fields: ['reference'],
+    message: 'ce produit existe déjà',
+)]
 class Product
 {
     /**
@@ -21,33 +24,33 @@ class Product
     #[ORM\Id]
     #[ORM\Column(type:'integer')]
     #[ORM\GeneratedValue]
-    #[Groups(["get"])]
+    #[Groups(['get'])]
     private ?int $id = null;
 
     /**
      * [Description for $brand]
      */
-    #[ORM\Column]
-    #[Groups(["get"])]
+    #[ORM\Column(type: 'string', length: 255)]
+    #[Groups(['get'])]
     #[Assert\NotBlank()]
     #[Assert\Length(max: 255)]
-    private string $brand;
+    private ?string $brand = null;
 
     /**
      * [Description for $name]
      */
-    #[ORM\Column]
-    #[Groups(["get"])]
+    #[ORM\Column(type: 'string', length: 255)]
+    #[Groups(['get'])]
     #[Assert\NotBlank()]
     #[Assert\Length(max: 255)]
-    private string $name;
+    private ?string $name = null;
 
     /**
      * [Description for $description]
      */
     #[ORM\Column(type: Types::TEXT)]
     #[Assert\NotBlank()]
-    private string $description;
+    private ?string $description = null;
 
     /**
      * [Description for $reference]
@@ -55,13 +58,13 @@ class Product
     #[ORM\Column]
     #[Assert\NotBlank()]
     #[Assert\Length(max: 255)]
-    private string $reference;
+    private ?string $reference = null;
 
     /**
      * [Description for $createdAt]
      */
     #[ORM\Column(type:'datetime_immutable')]
-    private \DateTimeInterface $createdAt;
+    private ?\DateTimeInterface $createdAt;
 
     public function __construct()
     {
@@ -79,7 +82,7 @@ class Product
     /**
      * Get the value of brand
      */
-    public function getBrand(): string
+    public function getBrand(): ?string
     {
         return $this->brand;
     }
@@ -87,7 +90,7 @@ class Product
     /**
      * Set the value of brand
      */
-    public function setBrand(string $brand): self
+    public function setBrand(?string $brand): self
     {
         $this->brand = $brand;
 
@@ -97,7 +100,7 @@ class Product
     /**
      * Get the value of name
      */
-    public function getName(): string
+    public function getName(): ?string
     {
         return $this->name;
     }
@@ -105,7 +108,7 @@ class Product
     /**
      * Set the value of name
      */
-    public function setName(string $name): self
+    public function setName(?string $name): self
     {
         $this->name = $name;
 
@@ -115,7 +118,7 @@ class Product
     /**
      * Get the value of description
      */
-    public function getDescription(): string
+    public function getDescription(): ?string
     {
         return $this->description;
     }
@@ -123,7 +126,7 @@ class Product
     /**
      * Set the value of description
      */
-    public function setDescription(string $description): self
+    public function setDescription(?string $description): self
     {
         $this->description = $description;
 
@@ -133,7 +136,7 @@ class Product
     /**
      * Get the value of reference
      */
-    public function getReference(): string
+    public function getReference(): ?string
     {
         return $this->reference;
     }
@@ -141,7 +144,7 @@ class Product
     /**
      * Set the value of reference
      */
-    public function setReference(string $reference): self
+    public function setReference(?string $reference): self
     {
         $this->reference = $reference;
 
@@ -151,7 +154,7 @@ class Product
     /**
      * Get the value of createdAt
      */
-    public function getCreatedAt(): \DateTimeInterface
+    public function getCreatedAt(): ?\DateTimeInterface
     {
         return $this->createdAt;
     }
@@ -159,7 +162,7 @@ class Product
     /**
      * Set the value of createdAt
      */
-    public function setCreatedAt(\DateTimeInterface $createdAt): self
+    public function setCreatedAt(?\DateTimeInterface $createdAt): self
     {
         $this->createdAt = $createdAt;
 
